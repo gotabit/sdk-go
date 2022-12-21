@@ -1,0 +1,6 @@
+.DS_Store
+.idea/
+.chain_cookie
+.exchange_cookie
+backup/
+go.sum
