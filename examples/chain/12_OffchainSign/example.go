@@ -24,6 +24,7 @@ type unsafeExporter interface {
 
 func main() {
 	address, cosmosKeyring, err := chainclient.InitCosmosKeyring(
+		chainclient.BaseCdc(),
 		os.Getenv("HOME")+"/.gotabitd",
 		"gotabitd",
 		"file",

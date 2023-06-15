@@ -60,6 +60,7 @@ func GetTextResult(chainClient chainclient.ChainClient, resolver string, node []
 
 func main() {
 	_, cosmosKeyring, err := chainclient.InitCosmosKeyring(
+		chainclient.BaseCdc(),
 		os.Getenv("HOME")+"/.gotabitd",
 		"gotabitd",
 		"file",

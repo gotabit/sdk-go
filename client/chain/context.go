@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/pkg/errors"
 
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
@@ -25,14 +25,14 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	feegranttypes "github.com/cosmos/cosmos-sdk/x/feegrant"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	paramproposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
-	ibcapplicationtypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	ibccoretypes "github.com/cosmos/ibc-go/v4/modules/core/types"
+	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	ibcapplicationtypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	ibccoretypes "github.com/cosmos/ibc-go/v7/modules/core/types"
 )
 
 // NewTxConfig initializes new Cosmos TxConfig with certain signModes enabled.
@@ -61,6 +61,33 @@ func NewTxConfig(signModes []signingtypes.SignMode) client.TxConfig {
 
 	marshaler := codec.NewProtoCodec(interfaceRegistry)
 	return tx.NewTxConfig(marshaler, signModes)
+}
+
+func BaseCdc() codec.Codec {
+	interfaceRegistry := types.NewInterfaceRegistry()
+	std.RegisterInterfaces(interfaceRegistry)
+
+	// more cosmos types
+	authtypes.RegisterInterfaces(interfaceRegistry)
+	authztypes.RegisterInterfaces(interfaceRegistry)
+	vestingtypes.RegisterInterfaces(interfaceRegistry)
+	banktypes.RegisterInterfaces(interfaceRegistry)
+	crisistypes.RegisterInterfaces(interfaceRegistry)
+	distributiontypes.RegisterInterfaces(interfaceRegistry)
+	evidencetypes.RegisterInterfaces(interfaceRegistry)
+	govtypes.RegisterInterfaces(interfaceRegistry)
+	paramproposaltypes.RegisterInterfaces(interfaceRegistry)
+	ibcapplicationtypes.RegisterInterfaces(interfaceRegistry)
+	ibccoretypes.RegisterInterfaces(interfaceRegistry)
+	slashingtypes.RegisterInterfaces(interfaceRegistry)
+	stakingtypes.RegisterInterfaces(interfaceRegistry)
+	upgradetypes.RegisterInterfaces(interfaceRegistry)
+	feegranttypes.RegisterInterfaces(interfaceRegistry)
+	wasmtypes.RegisterInterfaces(interfaceRegistry)
+	icatypes.RegisterInterfaces(interfaceRegistry)
+
+	return codec.NewProtoCodec(interfaceRegistry)
+
 }
 
 // NewClientContext creates a new Cosmos Client context, where chainID
@@ -102,7 +129,7 @@ func NewClientContext(
 		}),
 	}
 
-	var keyInfo keyring.Info
+	var keyInfo *keyring.Record
 
 	if kb != nil {
 		addr, err := cosmostypes.AccAddressFromBech32(fromSpec)
@@ -149,13 +176,12 @@ func newContext(
 	chainId string,
 	encodingConfig EncodingConfig,
 	kb keyring.Keyring,
-	keyInfo keyring.Info,
+	keyInfo *keyring.Record,
 
 ) client.Context {
 	clientCtx := client.Context{
 		ChainID:           chainId,
 		Codec:             encodingConfig.Marshaler,
-		JSONCodec:         encodingConfig.Marshaler,
 		InterfaceRegistry: encodingConfig.InterfaceRegistry,
 		Output:            os.Stderr,
 		OutputFormat:      "json",
@@ -171,9 +197,13 @@ func newContext(
 
 	if keyInfo != nil {
 		clientCtx = clientCtx.WithKeyring(kb)
-		clientCtx = clientCtx.WithFromAddress(keyInfo.GetAddress())
-		clientCtx = clientCtx.WithFromName(keyInfo.GetName())
-		clientCtx = clientCtx.WithFrom(keyInfo.GetName())
+		addr, err := keyInfo.GetAddress()
+		if err != nil {
+			panic(err)
+		}
+		clientCtx = clientCtx.WithFromAddress(addr)
+		clientCtx = clientCtx.WithFromName(keyInfo.Name)
+		clientCtx = clientCtx.WithFrom(keyInfo.Name)
 	}
 
 	return clientCtx

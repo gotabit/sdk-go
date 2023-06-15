@@ -61,6 +61,7 @@ func GetCommitment(chainClient chainclient.ChainClient, controller, resolver, ow
 
 func main() {
 	senderAddress, cosmosKeyring, err := chainclient.InitCosmosKeyring(
+		chainclient.BaseCdc(),
 		os.Getenv("HOME")+"/.gotabitd",
 		"gotabitd",
 		"file",

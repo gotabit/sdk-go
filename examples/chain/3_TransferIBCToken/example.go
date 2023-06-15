@@ -5,12 +5,13 @@ import (
 	"os"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	chainclient "github.com/gotabit/sdk-go/client/chain"
 )
 
 func main() {
 	senderAddress, cosmosKeyring, err := chainclient.InitCosmosKeyring(
+		chainclient.BaseCdc(),
 		os.Getenv("HOME")+"/.gotabitd",
 		"gotabitd",
 		"file",

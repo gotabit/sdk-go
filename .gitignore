@@ -4,3 +4,5 @@
 .exchange_cookie
 backup/
 go.sum
+
+examples/chain/13_mint_nft
