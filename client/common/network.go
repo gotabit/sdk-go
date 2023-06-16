@@ -44,6 +44,15 @@ var Networks map[string]Network = map[string]Network{
 		Denom:        "ugtb",
 		Decimals:     6,
 	},
+	"newsdk": {
+		RPCEndpoint:  "tcp://45.77.168.25:26657",
+		GrpcEndpoint: "tcp://45.77.168.25:9090",
+		ChainId:      "gotabit-dev-1",
+		Name:         "GotaBit-dev",
+		RestEndpoint: "http://45.77.168.25:1317",
+		Denom:        "ugtb",
+		Decimals:     6,
+	},
 }
 
 func LoadNetwork(name string) Network {
