@@ -16,40 +16,38 @@ type Network struct {
 	Decimals     int
 }
 
-func LoadNetwork(name string) Network {
-	if name == "testnet" {
-		return Network{
-			RPCEndpoint:  "https://rpc-testnet.gotabit.dev:443",
-			GrpcEndpoint: "https://grpc-testnet.gotabit.dev:443",
-			ChainId:      "gotabit-test-1",
-			Name:         "GotaBit-test",
-			RestEndpoint: "https://rest-testnet.gotabit.dev:443",
-			Denom:        "ugtb",
-			Decimals:     6,
-		}
-	} else if name == "mainnet" {
-		return Network{
-			RPCEndpoint:  "https://rpc.gotabit.dev:443",
-			GrpcEndpoint: "https://grpc.gotabit.dev:443",
-			ChainId:      "gotabit-alpha",
-			Name:         "GotaBit",
-			RestEndpoint: "https://rest.gotabit.dev:443",
-			Denom:        "ugtb",
-			Decimals:     6,
-		}
-	} else if name == "devnet" {
-		return Network{
-			RPCEndpoint:  "https://rpc-devnet.gotabit.dev:443",
-			GrpcEndpoint: "https://grpc-devnet.gotabit.dev:443",
-			ChainId:      "gotabit-dev-1",
-			Name:         "GotaBit-dev",
-			RestEndpoint: "https://rest-devnet.gotabit.dev:443",
-			Denom:        "ugtb",
-			Decimals:     6,
-		}
-	}
+var Networks map[string]Network = map[string]Network{
+	"mainnet": {
+		RPCEndpoint:  "https://rpc.gotabit.dev:443",
+		GrpcEndpoint: "https://grpc.gotabit.dev:443",
+		ChainId:      "gotabit-alpha",
+		Name:         "GotaBit",
+		RestEndpoint: "https://rest.gotabit.dev:443",
+		Denom:        "ugtb",
+		Decimals:     6,
+	},
+	"testnet": {
+		RPCEndpoint:  "https://rpc-testnet.gotabit.dev:443",
+		GrpcEndpoint: "https://grpc-testnet.gotabit.dev:443",
+		ChainId:      "gotabit-test-1",
+		Name:         "GotaBit-test",
+		RestEndpoint: "https://rest-testnet.gotabit.dev:443",
+		Denom:        "ugtb",
+		Decimals:     6,
+	},
+	"devnet": {
+		RPCEndpoint:  "https://rpc-devnet.gotabit.dev:443",
+		GrpcEndpoint: "https://grpc-devnet.gotabit.dev:443",
+		ChainId:      "gotabit-dev-1",
+		Name:         "GotaBit-dev",
+		RestEndpoint: "https://api-devnet.gotabit.dev:443",
+		Denom:        "ugtb",
+		Decimals:     6,
+	},
+}
 
-	return Network{}
+func LoadNetwork(name string) Network {
+	return Networks[name]
 }
 
 func DialerFunc(ctx context.Context, addr string) (net.Conn, error) {

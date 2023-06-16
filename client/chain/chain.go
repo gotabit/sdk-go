@@ -138,10 +138,14 @@ func NewChainClient(
 		return nil, err
 	}
 
+	addr, err := user.GetAddress()
+	if err != nil {
+		return nil, err
+	}
 	// initialize grpc client
 	ctx, err := NewClientContext(
 		network.ChainId,
-		user.GetAddress().String(),
+		addr.String(),
 		cosmosKeyring,
 		network.RPCEndpoint,
 	)
@@ -463,7 +467,7 @@ func (c *chainClient) SimulateMsg(clientCtx client.Context, msgs ...sdk.Msg) (*t
 		return nil, err
 	}
 
-	simTxBytes, err := tx.BuildSimTx(txf, msgs...)
+	simTxBytes, err := txf.BuildSimTx(msgs...)
 	if err != nil {
 		err = errors.Wrap(err, "failed to build sim tx bytes")
 		return nil, err
@@ -525,7 +529,7 @@ func (c *chainClient) broadcastTx(
 	}
 	ctx := context.Background()
 	if clientCtx.Simulate {
-		simTxBytes, err := tx.BuildSimTx(txf, msgs...)
+		simTxBytes, err := txf.BuildSimTx(msgs...)
 		if err != nil {
 			err = errors.Wrap(err, "failed to build sim tx bytes")
 			return nil, err
@@ -544,7 +548,7 @@ func (c *chainClient) broadcastTx(
 		c.gasWanted = adjustedGas
 	}
 
-	txn, err := tx.BuildUnsignedTx(txf, msgs...)
+	txn, err := txf.BuildUnsignedTx(msgs...)
 
 	if err != nil {
 		err = errors.Wrap(err, "failed to BuildUnsignedTx")
@@ -735,7 +739,7 @@ func (c *chainClient) BuildGenericAuthz(granter string, grantee string, msgtype 
 		Grantee: grantee,
 		Grant: authztypes.Grant{
 			Authorization: authzAny,
-			Expiration:    expireIn,
+			Expiration:    &expireIn,
 		},
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 func main() {
 	senderAddress, cosmosKeyring, err := chainclient.InitCosmosKeyring(
+		chainclient.BaseCdc(),
 		os.Getenv("HOME")+"/.gotabitd",
 		"gotabitd",
 		"file",

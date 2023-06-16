@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	mnemonic, account, cosmosKeyring, err := chainclient.CreateMnemonicAndKeyring(12, "user", "")
+	mnemonic, account, cosmosKeyring, err := chainclient.CreateMnemonicAndKeyring(chainclient.BaseCdc(), 12, "user", "")
 	fmt.Println("Generated Mnemonic:", mnemonic)
 
 	if err != nil {

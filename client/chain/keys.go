@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	cosmcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -25,6 +26,7 @@ const defaultKeyringKeyName = "testuser"
 var emptyCosmosAddress = cosmtypes.AccAddress{}
 
 func InitCosmosKeyring(
+	cdc codec.Codec,
 	cosmosKeyringDir string,
 	cosmosKeyringAppName string,
 	cosmosKeyringBackend string,
@@ -74,7 +76,7 @@ func InitCosmosKeyring(
 		}
 
 		// wrap a PK into a Keyring
-		kb, err := KeyringForPrivKey(keyName, cosmosAccPk)
+		kb, err := KeyringForPrivKey(cdc, keyName, cosmosAccPk)
 		return addressFromPk, kb, err
 
 	case len(cosmosMnemonic) > 0:
@@ -84,7 +86,7 @@ func InitCosmosKeyring(
 			keyName = defaultKeyringKeyName
 		}
 
-		return KeyringForMnemonic(keyName, cosmosMnemonic)
+		return KeyringForMnemonic(cdc, keyName, cosmosMnemonic)
 
 	case len(cosmosKeyFrom) > 0:
 		var fromIsAddress bool
@@ -110,13 +112,14 @@ func InitCosmosKeyring(
 			cosmosKeyringBackend,
 			absoluteKeyringDir,
 			passReader,
+			cdc,
 		)
 		if err != nil {
 			err = errors.Wrap(err, "failed to init keyring")
 			return emptyCosmosAddress, nil, err
 		}
 
-		var keyInfo keyring.Info
+		var keyInfo *keyring.Record
 		if fromIsAddress {
 			if keyInfo, err = kb.KeyByAddress(addressFrom); err != nil {
 				err = errors.Wrapf(err, "couldn't find an entry for the key %s in keybase", addressFrom.String())
@@ -129,26 +132,30 @@ func InitCosmosKeyring(
 			}
 		}
 
+		addr, err := keyInfo.GetAddress()
+		if err != nil {
+			panic(err)
+		}
 		switch keyType := keyInfo.GetType(); keyType {
 		case keyring.TypeLocal:
 			// kb has a key and it's totally usable
-			return keyInfo.GetAddress(), kb, nil
+			return addr, kb, nil
 		case keyring.TypeLedger:
 			// the kb stores references to ledger keys, so we must explicitly
 			// check that. kb doesn't know how to scan HD keys - they must be added manually before
 			if cosmosUseLedger {
-				return keyInfo.GetAddress(), kb, nil
+				return addr, kb, nil
 			}
-			err := errors.Errorf("'%s' key is a ledger reference, enable ledger option", keyInfo.GetName())
+			err := errors.Errorf("'%s' key is a ledger reference, enable ledger option", keyInfo.Name)
 			return emptyCosmosAddress, nil, err
 		case keyring.TypeOffline:
-			err := errors.Errorf("'%s' key is an offline key, not supported yet", keyInfo.GetName())
+			err := errors.Errorf("'%s' key is an offline key, not supported yet", keyInfo.Name)
 			return emptyCosmosAddress, nil, err
 		case keyring.TypeMulti:
-			err := errors.Errorf("'%s' key is an multisig key, not supported yet", keyInfo.GetName())
+			err := errors.Errorf("'%s' key is an multisig key, not supported yet", keyInfo.Name)
 			return emptyCosmosAddress, nil, err
 		default:
-			err := errors.Errorf("'%s' key  has unsupported type: %s", keyInfo.GetName(), keyType)
+			err := errors.Errorf("'%s' key  has unsupported type: %s", keyInfo.Name, keyType)
 			return emptyCosmosAddress, nil, err
 		}
 
@@ -158,18 +165,7 @@ func InitCosmosKeyring(
 	}
 }
 
-func CreateWalletAndKeyring() (cosmtypes.AccAddress, keyring.Keyring, error) {
-	keyName := defaultKeyringKeyName
-
-	privKey := secp256k1.GenPrivKey()
-	addressFromPk := cosmtypes.AccAddress(privKey.PubKey().Address().Bytes())
-
-	// wrap a PK into a Keyring
-	kb, err := KeyringForPrivKey(keyName, privKey)
-	return addressFromPk, kb, err
-}
-
-func CreateMnemonicAndKeyring(length int, name string, passphrase string) (string, cosmtypes.AccAddress, keyring.Keyring, error) {
+func CreateMnemonicAndKeyring(cdc codec.Codec, length int, name string, passphrase string) (string, cosmtypes.AccAddress, keyring.Keyring, error) {
 	if length != 12 && length != 15 && length != 18 && length != 21 && length != 24 {
 		return "", emptyCosmosAddress, nil, errors.New("invalid mnemonic length")
 	}
@@ -183,13 +179,17 @@ func CreateMnemonicAndKeyring(length int, name string, passphrase string) (strin
 		return "", emptyCosmosAddress, nil, err
 	}
 
-	kb := keyring.NewInMemory()
+	kb := keyring.NewInMemory(cdc)
 	info, err := kb.NewAccount(name, mnemonic, passphrase, "m/44'/118'/0'/0/0", hd.Secp256k1)
 	if err != nil {
 		err = errors.Wrap(err, "failed to create new mnemonic")
 		return "", emptyCosmosAddress, nil, err
 	}
-	return mnemonic, info.GetAddress(), kb, nil
+	addr, err := info.GetAddress()
+	if err != nil {
+		return "", nil, nil, err
+	}
+	return mnemonic, addr, kb, nil
 }
 
 func ExportAccount(outputFile string, kb keyring.Keyring, account cosmtypes.AccAddress, encryptPassphrase string) error {
@@ -237,8 +237,8 @@ func (r *passReader) Read(p []byte) (n int, err error) {
 
 // KeyringForPrivKey creates a temporary in-mem keyring for a PrivKey.
 // Allows to init Context when the key has been provided in plaintext and parsed.
-func KeyringForPrivKey(name string, privKey cryptotypes.PrivKey) (keyring.Keyring, error) {
-	kb := keyring.NewInMemory()
+func KeyringForPrivKey(cdc codec.Codec, name string, privKey cryptotypes.PrivKey) (keyring.Keyring, error) {
+	kb := keyring.NewInMemory(cdc)
 	tmpPhrase := randPhrase(64)
 	armored := cosmcrypto.EncryptArmorPrivKey(privKey, tmpPhrase, privKey.Type())
 	err := kb.ImportPrivKey(name, armored, tmpPhrase)
@@ -250,15 +250,19 @@ func KeyringForPrivKey(name string, privKey cryptotypes.PrivKey) (keyring.Keyrin
 	return kb, nil
 }
 
-func KeyringForMnemonic(name, mnemonic string) (cosmtypes.AccAddress, keyring.Keyring, error) {
-	kb := keyring.NewInMemory()
+func KeyringForMnemonic(cdc codec.Codec, name, mnemonic string) (cosmtypes.AccAddress, keyring.Keyring, error) {
+	kb := keyring.NewInMemory(cdc)
 	info, err := kb.NewAccount(name, mnemonic, "", "m/44'/118'/0'/0/0", hd.Secp256k1)
 	if err != nil {
 		err = errors.Wrap(err, "failed to import privkey")
 		return emptyCosmosAddress, nil, err
 	}
 
-	return info.GetAddress(), kb, nil
+	addr, err := info.GetAddress()
+	if err != nil {
+		return nil, nil, err
+	}
+	return addr, kb, nil
 }
 
 func randPhrase(size int) string {

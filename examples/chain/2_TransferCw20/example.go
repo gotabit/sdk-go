@@ -36,6 +36,7 @@ func getBalance(chainClient chainclient.ChainClient, cw20Address, address string
 
 func main() {
 	senderAddress, cosmosKeyring, err := chainclient.InitCosmosKeyring(
+		chainclient.BaseCdc(),
 		os.Getenv("HOME")+"/.gotabitd",
 		"gotabitd",
 		"file",
