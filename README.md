@@ -54,10 +54,10 @@ Check the [documentation](docs.md) to get you started!
 ## Run examples
 ```bash
 # run chain example
-go run examples/chain/1_MsgSend/example.go
+CC=clang go run examples/chain/1_MsgSend/example.go
 
 # run stake example
-go run examples/chain/4_Stake/example.go
+CC=clang go run examples/chain/4_Stake/example.go
 ```
 
 ## Talk to us
