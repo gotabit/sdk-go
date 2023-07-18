@@ -5,7 +5,8 @@ import (
 )
 
 type Commit struct {
-	Commitment string `json:"commitment"`
+	Commitment  string    `json:"commitment"`
+	Commitments *[]string `json:"commitments,omitempty"`
 }
 
 type MsgCommit struct {
@@ -13,12 +14,20 @@ type MsgCommit struct {
 }
 
 type Register struct {
-	Address      *string `json:"address,omitempty"`
-	DurationType string  `json:"duration_type"`
-	Name         string  `json:"name"`
-	Owner        string  `json:"owner"`
-	Resolver     *string `json:"resolver,omitempty"`
-	Secret       string  `json:"secret"`
+	Owner  string `json:"owner"`
+	Domain Domain `json:"domain"`
+}
+
+type Domain struct {
+	TopLevel TopLevel `json:"top_level"`
+}
+
+type TopLevel struct {
+	Address      *string  `json:"address,omitempty"`
+	Names        []string `json:"names"`
+	DurationType string   `json:"duration_type"`
+	Resolver     *string  `json:"resolver,omitempty"`
+	Secret       string   `json:"secret"`
 }
 
 type MsgRegister struct {
@@ -104,4 +113,8 @@ type ReverseClaim struct {
 
 type MsgReverseClaim struct {
 	Msg ReverseClaim `json:"reverse_claim"`
+}
+
+type MsgNamePreview struct {
+	Msg Name `json:"name_preview"`
 }
