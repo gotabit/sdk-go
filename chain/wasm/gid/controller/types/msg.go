@@ -14,20 +14,24 @@ func NewMsgCommit(commitment string) MsgCommit {
 
 func NewMsgRegister(
 	address *string,
-	durationType,
-	name,
+	durationType string,
+	names []string,
 	owner string,
 	resolver *string,
 	secret string,
 ) MsgRegister {
 	return MsgRegister{
 		Msg: Register{
-			Address:      address,
-			DurationType: durationType,
-			Name:         name,
-			Owner:        owner,
-			Resolver:     resolver,
-			Secret:       secret,
+			Owner: owner,
+			Domain: Domain{
+				TopLevel: TopLevel{
+					Address:      address,
+					Names:        names,
+					DurationType: durationType,
+					Resolver:     resolver,
+					Secret:       secret,
+				},
+			},
 		},
 	}
 }
@@ -261,6 +265,14 @@ func NewQueryGetReverseNode(address string) QueryGetReverseNode {
 	return QueryGetReverseNode{
 		Query: Address{
 			Address: address,
+		},
+	}
+}
+
+func NewNamePreview(name string) MsgNamePreview {
+	return MsgNamePreview{
+		Msg: Name{
+			Name: name,
 		},
 	}
 }

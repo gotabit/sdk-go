@@ -76,3 +76,13 @@ type QueryGetPrice struct {
 type QueryGetReverseNode struct {
 	Query Address `json:"get_reverse_node"`
 }
+
+type QueryGetRecord struct {
+	Query Name `json:"get_record"`
+}
+
+type QueryNamePreview struct {
+	IsAvailable bool `json:"is_available"`
+	IsValidName bool `json:"is_valid_name"`
+	IsReserved  bool `json:"is_reserved"`
+}
